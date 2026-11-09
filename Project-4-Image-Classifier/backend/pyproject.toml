@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+# FastAPI's File()/Depends()/Query() are meant to be used as call-in-default-arg sentinels.
+ignore = ["B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
