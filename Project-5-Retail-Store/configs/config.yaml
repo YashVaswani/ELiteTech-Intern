@@ -1,0 +1,21 @@
+# Central configuration for the customer segmentation pipeline.
+# Editing this file changes pipeline behavior without touching code.
+
+random_state: 42
+
+data:
+  raw_path: "data/raw/transactions.csv"
+  n_customers: 2000
+  snapshot_date: "2026-01-01" # "today" for Recency calculation
+
+features:
+  processed_path: "data/processed/rfm_features.csv"
+
+model:
+  k_range: [2, 10] # inclusive range searched for the optimal cluster count
+  artifact_path: "models/kmeans_pipeline.joblib"
+  labeled_output_path: "data/processed/customers_segmented.csv"
+
+reports:
+  figures_dir: "reports/figures"
+  k_scores_path: "reports/k_selection_scores.csv"

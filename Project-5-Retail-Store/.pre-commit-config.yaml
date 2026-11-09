@@ -1,0 +1,19 @@
+# Runs automatically before each commit: `pre-commit install` once, then it's automatic.
+# A single tool (ruff) handles both linting and formatting - no need for a
+# black + isort + flake8 stack to do the same job.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=5000]
