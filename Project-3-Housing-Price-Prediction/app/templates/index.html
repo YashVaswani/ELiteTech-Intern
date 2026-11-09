@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!--
+        Housing Price Predictor — Front-End Template
+        =============================================
+        This file is rendered by Flask's render_template() function.
+
+        Jinja2 variables available:
+            {{ prediction }}  —  The formatted price string (e.g. "$1,234,567.89")
+                                 or None when the page first loads.
+
+        Design choices:
+            • Dark gradient background for a modern feel.
+            • Glassmorphism card (semi-transparent blur) for the form.
+            • Google Font "Inter" for clean, professional typography.
+            • CSS Grid for a responsive two-column layout on wider screens.
+            • Smooth hover / focus animations for better UX.
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Price Predictor</title>
+
+    <!-- Google Font: Inter — a clean, versatile sans-serif typeface -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet">
+
+    <!-- Leaflet CSS & JS for the map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Leaflet Geocoder (Nominatim API) for Address Search -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <!-- Link external CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="/" class="nav-brand">🏠 <span>Housing Price Predictor</span></a>
+        <ul class="nav-links">
+            <li><a href="/" class="active">Home</a></li>
+            <li><a href="/about">About Model</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="main-container">
+        
+        <!-- ====================== LEFT COLUMN: MAP ====================== -->
+        <div id="map-wrapper" class="map-container">
+            <button type="button" id="locate-btn">📍 Locate Me</button>
+            <div id="map"></div>
+        </div>
+
+        <!-- ====================== RIGHT COLUMN: MAIN CARD ====================== -->
+        <div class="card">
+            {% if error %}
+            <div class="alert alert-danger">
+                <span>⚠️</span> {{ error }}
+            </div>
+            {% endif %}
+            <h1>🏠 Price Predictor</h1>
+            <p class="subtitle" style="margin-bottom: 2rem;">Enter property specs and select a map location.</p>
+
+        <!--
+            The form POSTs to the /predict route defined in app.py.
+            Each <input>/<select> name attribute matches what app.py reads
+            from request.form[...].
+        -->
+        <form action="/predict" method="POST">
+            <div class="form-grid">
+
+                <!-- ==================== NUMERIC INPUTS ==================== -->
+ 
+                <!-- Area: total area in square feet -->
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label for="area">Area (sq ft)</label>
+                    <input type="number" id="area" name="area"
+                           placeholder="e.g. 5000" min="0" required>
+                </div>
+ 
+                <!-- Bedrooms: 1–6 range -->
+                <div class="form-group">
+                    <label for="bedrooms">Bedrooms</label>
+                    <input type="number" id="bedrooms" name="bedrooms"
+                           placeholder="1 – 6" min="1" max="6" required>
+                </div>
+ 
+                <!-- Bathrooms: 1–4 range -->
+                <div class="form-group">
+                    <label for="bathrooms">Bathrooms</label>
+                    <input type="number" id="bathrooms" name="bathrooms"
+                           placeholder="1 – 4" min="1" max="4" required>
+                </div>
+
+                <!-- Location Selection (Hidden Inputs) -->
+                <div class="form-group" style="grid-column: 1 / -1; margin-top: 10px; padding: 15px; background: rgba(56, 189, 248, 0.05); border-radius: 12px; border: 1px dashed rgba(56, 189, 248, 0.3);">
+                    <label style="color: #38bdf8;">Map Selection</label>
+                    <input type="hidden" id="latitude" name="latitude" required>
+                    <input type="hidden" id="longitude" name="longitude" required>
+                    <p id="latlng-display" style="font-size: 0.85rem; margin: 0; color: var(--text-secondary);">Waiting for pin drop on map...</p>
+                </div>
+
+                <!-- ==================== SUBMIT BUTTON ==================== -->
+                <div class="btn-wrap">
+                    <button type="submit" class="btn-submit">Predict Price</button>
+                </div>
+
+            </div><!-- /.form-grid -->
+        </form>
+
+        <!--
+            PREDICTION RESULT
+            =================
+            Jinja2 renders this block ONLY when the /predict route passes
+            a non-None "prediction" value.  On first page load it is hidden.
+        -->
+        {% if prediction %}
+        <div class="result">
+            <p class="label">Estimated Price</p>
+            <p class="price">{{ prediction }}</p>
+        </div>
+        {% endif %}
+
+        </div><!-- /.card -->
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 Housing Price Prediction Project. For educational and demonstrative purposes only.</p>
+    </footer>
+
+    <script>
+        // Initialize map centered on India
+        const map = L.map('map', {zoomControl: false}).setView([20.5937, 78.9629], 5);
+        
+        // Add Zoom Control to bottom right
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // Add CartoDB Dark Matter tiles for the dark theme
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://carto.com/">CARTO</a>'
+        }).addTo(map);
+        
+        let marker;
+        
+        // Helper function to update the form and drop pin
+        function setLocation(lat, lng) {
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            marker = L.marker([lat, lng]).addTo(map);
+            
+            // Set hidden inputs
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+            document.getElementById('latlng-display').innerText = `Selected: Lat ${lat.toFixed(4)}, Lng ${lng.toFixed(4)}`;
+        }
+        
+        // Handle map clicks
+        map.on('click', function(e) {
+            setLocation(e.latlng.lat, e.latlng.lng);
+        });
+
+        // Configure Nominatim for India
+        const indiaGeocoder = L.Control.Geocoder.nominatim({
+            geocodingQueryParams: {
+                countrycodes: 'in'              // Limit to India
+            }
+        });
+
+        // Add Geocoder Search Bar (Nominatim API)
+        L.Control.geocoder({
+            geocoder: indiaGeocoder,
+            defaultMarkGeocode: false,
+            placeholder: "Search address in India..."
+        })
+        .on('markgeocode', function(e) {
+            const bbox = e.geocode.bbox;
+            const center = e.geocode.center;
+            
+            // Pan map to searched location
+            map.fitBounds(bbox);
+            
+            // Drop pin and update form
+            setLocation(center.lat, center.lng);
+        })
+        .addTo(map);
+
+        // Auto-Locate Me Feature
+        document.getElementById('locate-btn').addEventListener('click', function() {
+            if ("geolocation" in navigator) {
+                this.innerText = "⏳ Locating...";
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    map.setView([lat, lng], 14); // Zoom in on the user
+                    setLocation(lat, lng);
+                    document.getElementById('locate-btn').innerText = "📍 Locate Me";
+                }, function(error) {
+                    alert("Could not access your location. Please ensure location permissions are granted.");
+                    document.getElementById('locate-btn').innerText = "📍 Locate Me";
+                });
+            } else {
+                alert("Geolocation is not supported by your browser.");
+            }
+        });
+        
+        // Form validation to ensure location is picked
+        document.querySelector('form').addEventListener('submit', function(e) {
+            if (!document.getElementById('latitude').value) {
+                e.preventDefault();
+                alert('Please select a location on the map.');
+            }
+        });
+    </script>
+</body>
+</html>

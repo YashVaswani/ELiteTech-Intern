@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - House Price Predictor</title>
+    <!-- Google Font: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Link external CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="/" class="nav-brand">🏠 <span>Housing Price Predictor</span></a>
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about" class="active">About Model</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="main-container">
+        <div class="card">
+            <h1>📊 Model Insights & Performance</h1>
+            <p class="subtitle">Understand the machine learning model behind the predictions.</p>
+
+            <section class="about-section">
+                <h2>Performance Metrics</h2>
+                <p>The model is trained using an <strong>Ordinary Least Squares (OLS) Linear Regression</strong> algorithm with 3 features (Area, Bedrooms, Bathrooms), which was fitted on an 80% split of the cleaned Housing dataset and evaluated on the remaining 20% test set.</p>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-val">0.4559</div>
+                        <div class="metric-lbl">R² Score</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-val">₹1,658,325</div>
+                        <div class="metric-lbl">RMSE</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-val">₹1,265,276</div>
+                        <div class="metric-lbl">MAE</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="about-section">
+                <h2>Feature Importance</h2>
+                <p>Since the input features were scaled using a <code>StandardScaler</code> prior to training, the coefficient magnitudes directly represent the feature importances (impact on price).</p>
+                <img src="/reports/feature_importance.png" alt="Feature Importance Plot" class="about-plot">
+            </section>
+
+            <section class="about-section">
+                <h2>How It Works & Regional Calibration</h2>
+                <p>When you input details on the home page, the application:</p>
+                <ol style="margin-left: 1.5rem; margin-bottom: 1.5rem; color: var(--text-secondary); line-height: 1.6;">
+                    <li>Parses and validates user inputs (Area, Bedrooms, Bathrooms).</li>
+                    <li>Standardizes the features using parameters from the training-set <code>StandardScaler</code>.</li>
+                    <li>Predicts the base price using the trained OLS Linear Regression model (which represents premium Tier 1 Metro Rates).</li>
+                    <li>Applies a <strong>Regional Market Index (RMI)</strong> multiplier depending on the selected city tier:
+                        <ul style="margin-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                            <li><strong>Tier 1 Metro</strong>: <code>1.00x</code> (100% standard rate)</li>
+                            <li><strong>Tier 2 City</strong>: <code>0.65x</code> (35% adjustment)</li>
+                            <li><strong>Tier 3 / Suburbs</strong>: <code>0.40x</code> (60% adjustment)</li>
+                        </ul>
+                    </li>
+                    <li>Formats the calibrated prediction in <strong>Lakhs or Crores</strong> (Indian numbering system) for natural readability.</li>
+                </ol>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 Housing Price Prediction Project. For educational and demonstrative purposes only.</p>
+    </footer>
+</body>
+</html>
